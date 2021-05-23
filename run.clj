@@ -151,7 +151,7 @@
 
 (defn -wrk
   [server route]
-  (doseq [rate (get spec server)
+  (doseq [rate (get-in spec [server 'rate])
           t [16]
           c [400]
           d [10] ;; minutes
