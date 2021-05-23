@@ -179,14 +179,14 @@
 (comment
   (-main))
 
-
-
 (comment
-  (def res (babashka.process/process "sleep 10"))
-  (println (babashka.process/process "sleep 10"))
+  ;; spit results to file for easy viewing
+  (->>
+   (fs/list-dir "results")
+   (filter #(str/ends-with? % ".png"))
+   sort
+   (map (fn [s] (format "![](%s)" s)))
+   (str/join "\n\n")
+   (spit "results.md"))
 
-  (p/check (p/destroy (babashka.process/process "sleep 10")))
-
-  (slurp (:err res))
-
-  (def resp (curl/get "localhost:9999/profile")))
+  )
