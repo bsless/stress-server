@@ -3,12 +3,43 @@
    [clojure.string :as str]
    [babashka.process :as p]
    [babashka.fs :as fs]
-   [babashka.curl :as curl]))
+   [babashka.curl :as curl]
+   [cheshire.core :as json]
+   [clojure.pprint :as pprint]))
+
+(prefer-method pprint/simple-dispatch clojure.lang.IPersistentMap clojure.lang.IDeref)
+
+
+(def server 'httpkit)
+(def route 'ring)
+
+(comment
+  (curl/post
+   "http://localhost:9999/profile"
+   {:headers {"content-type" "application/json"}
+    :body (json/generate-string {:file "bar.svg" :duration 5})}))
+
+(defn -post
+  [url m]
+  (curl/post
+   url
+   {:body (json/generate-string m)
+    :headers {"content-type" "application/json"}}))
+
+(defn post
+  ([url m]
+   (post url m false))
+  ([url m async?]
+   (if async?
+     (future (-post url m))
+     (-post url m))))
+
+(comment
+  (def p (post "localhost:9999/profile" {:file "bar.svg" :duration 5} true)))
 
 (def jar "target/uberjar/server.jar")
 (def url "http://localhost:9999/math/plus?x=1&y=2")
 
-;;; hdr-plot --output myplot.png --title "My plot" ./results/httpkit.ring.r100k.t16.c400.d480s.out
 (defn process-histogram
   [file]
   (println "processing histogram")
@@ -52,14 +83,16 @@
 (defn do-warmup
   []
   (println "warming up")
-  (let [proc (p/sh warmup)
+  (let [proc (p/check (p/process warmup {:out :inherit}))
         exit (:exit proc)]
     (println "warmup finished with status" exit)
     exit))
 
 (defn serve
-  [server route]
-  ["java" "-jar" jar server route])
+  ([server route]
+   (serve server route []))
+  ([server route opts]
+   (conj (into ["java"] opts) "-jar" jar server route)))
 
 (def startup-period 15)
 
@@ -68,31 +101,59 @@
   (Thread/sleep (* s 1000)))
 
 (defn do-serve
-  [server route]
-  (let [cmd (serve server route)]
-    (println "running" cmd)
-    (let [proc (p/process cmd)]
-      (println "checking for abnormal exit:" (:exit proc))
-      (println "waiting for server to stabilize")
-      (wait startup-period)
-      proc)))
+  ([server route]
+   (do-serve server route []))
+  ([server route opts]
+   (let [cmd (serve server route opts)]
+     (println "running" cmd)
+     (let [proc (p/process cmd {:out :inherit})]
+       (println "checking for abnormal exit:" (:exit proc))
+       (println "waiting for server to stabilize")
+       (wait startup-period)
+       proc))))
 
 (comment
   (def proc (p/process (serve 'httpkit 'ring)))
   (println (slurp (:err proc))))
 
+(def default-profile-duration 60)
+
+(defn profile
+  [server route]
+  (let [proc (do-serve server route ["-Djdk.attach.allowAttachSelf"
+                                     "-XX:+UnlockDiagnosticVMOptions"
+                                     "-XX:+DebugNonSafepoints"])
+        file (format "./results/%s.%s.svg" server route)]
+    (do-warmup)
+    (future
+      (Thread/sleep 5000)
+      (println (post "localhost:9999/profile" {:file file :duration default-profile-duration}))
+      (println "Profiling request sent"))
+    (do-warmup)
+    (p/destroy proc)))
+
+(comment
+  (profile "httpkit" "ring"))
+
 (defn duration
   [minutes]
   (str (* minutes 60) "s"))
 
-(def server 'httpkit)
-(def route 'ring)
+(def spec
+  '{httpkit
+    {rate ["60k" "75k"]}
+    pohjavirta
+    {rate ["60k" "75k" "90k"]}
+    aleph
+    {rate ["10k" "45k"]}
+    jetty
+    {rate ["50k" "60k" "70k"]}})
 
 (defn -wrk
   [server route]
-  (doseq [rate ["50k" "60k" "75k" "90k"]
-          t [#_4 16 #_24]
-          c [#_200 400 #_800]
+  (doseq [rate (get spec server)
+          t [16]
+          c [400]
           d [10] ;; minutes
           :let [name (str server "." route)
                 d (duration d)]]
@@ -107,6 +168,8 @@
           :while (nil? (:exit proc))
           :let [exit (do-warmup)]
           :while (zero? exit)]
+
+    (profile server route)
 
     (-wrk server route)
 
