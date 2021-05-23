@@ -17,6 +17,8 @@
                  [aleph "0.4.7-alpha5"]
                  [ring/ring-jetty-adapter "1.9.3"]
                  [http-kit "2.5.3"]
+                 [com.appsflyer/donkey "0.5.1"]
+                 [metosin/pohjavirta "0.0.1-alpha7"]
                  [com.clojure-goes-fast/clj-async-profiler "0.5.0"]
                  ]
   :main com.github.bsless.stress-server
@@ -25,5 +27,11 @@
   :profiles
   {:uberjar {:aot :all
              :jvm-opts ["-Dclojure.compiler.direct-linking=true"
-                        "-Dclojure.compiler.elide-meta=[:doc :file :line :added]"]}
-   :dev {:plugins [[lein-ancient "0.6.15"]]}})
+                        "-Dclojure.compiler.elide-meta=[:doc :file :line :added]"
+                        "-Djdk.attach.allowAttachSelf"
+                        "-XX:+UnlockDiagnosticVMOptions"
+                        "-XX:+DebugNonSafepoints"]}
+   :dev {:jvm-opts ["-Djdk.attach.allowAttachSelf"
+                    "-XX:+UnlockDiagnosticVMOptions"
+                    "-XX:+DebugNonSafepoints"]
+         :plugins [[lein-ancient "0.6.15"]]}})

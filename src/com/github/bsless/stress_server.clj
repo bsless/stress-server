@@ -5,12 +5,41 @@
    [org.httpkit.server :as httpkit]
    [aleph.http :as aleph]
    [ring.adapter.jetty :as jetty]
+
+   [pohjavirta.server :as pohjavirta]
+
    [com.github.bsless.stress-server.ring :as ring]
    [com.github.bsless.stress-server.ring-middleware :as ring-middleware]
    [com.github.bsless.stress-server.pedestal :as p])
   (:gen-class))
 
+(def java-version (System/getProperty "java.version"))
+(def java8? (.startsWith java-version "1.8."))
+
+(defmacro above-8
+  [& body]
+  (when-not java8?
+    `(do ~@body)))
+
 (def port 9999)
+
+(above-8
+ (println "above java 8, adding a donkey")
+ (require
+  '[com.appsflyer.donkey.core :as donkey-kong]
+  '[com.appsflyer.donkey.server :as ds]
+  '[com.appsflyer.donkey.result :refer [on-success]])
+
+ (defn donkey
+   [routes]
+   (->
+    (donkey-kong/create-donkey)
+    (donkey-kong/create-server
+     {:port port
+      :routes [{:handler routes
+                :handler-mode :non-blocking}]})
+    (ds/start)
+    (on-success (fn [_] (println "Server started listening on port" port))))))
 
 (defn pedestal
   [router]
@@ -44,15 +73,26 @@
   [app]
   (aleph/start-server app {:port port}))
 
+(defn pohjavirta
+  [routes]
+  (-> routes (pohjavirta/create {:port port}) pohjavirta/start))
+
+(def servers
+  (merge
+   {"pedestal" pedestal
+    "httpkit" httpkit
+    "jetty" jetty
+    "pohjavirta" pohjavirta
+    "aleph" aleph}
+   (above-8
+    {"donkey" donkey})))
+
 (defn -main
   [& [server router]]
   (let [router (case router
                  "ring" (ring/app)
                  "ring-middleware" (ring-middleware/app)
-                 "pedestal" (p/router))]
-    (case server
-      "pedestal" (pedestal router)
-      "httpkit" (httpkit router)
-      "jetty" (jetty router)
-      "aleph" (aleph router))
+                 "pedestal" (p/router))
+        go (get servers server)]
+    (go router)
    (deref (promise))))
