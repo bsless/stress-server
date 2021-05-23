@@ -38,6 +38,11 @@ For this reason, I chose a minimal duration for wrk of 10 minutes. It is
 not a lot. If anything, it's too short, but any less than that has been
 found to provide incorrect results.
 
+## TODO
+
+- [ ] Run with different Java versions (support Donkey)
+- [ ] Different GCs
+
 ## License
 
 Copyright © 2021 Ben Sless
