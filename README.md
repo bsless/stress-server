@@ -42,6 +42,9 @@ found to provide incorrect results.
 
 - [ ] Run with different Java versions (support Donkey)
 - [ ] Different GCs
+- [ ] Lightweight routes
+- [ ] Large responses
+- [ ] Compojure
 
 ## License
 
