@@ -145,7 +145,7 @@
     pohjavirta
     {rate ["60k" "75k" "90k"]}
     aleph
-    {rate ["10k" "45k"]}
+    {rate ["10k"]}
     jetty
     {rate ["50k" "60k" "70k"]}})
 
@@ -162,14 +162,13 @@
 
 (defn -main
   []
-  (doseq [server '[httpkit jetty aleph]
+  (doseq [server '[httpkit jetty aleph pohjavirta]
           route '[ring ring-middleware]
-          :let [proc (do-serve server route)]
+          :let [_ (profile server route)
+                proc (do-serve server route)]
           :while (nil? (:exit proc))
           :let [exit (do-warmup)]
           :while (zero? exit)]
-
-    (profile server route)
 
     (-wrk server route)
 
