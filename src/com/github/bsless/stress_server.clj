@@ -75,7 +75,9 @@
 
 (defn pohjavirta
   [routes]
-  (-> routes (pohjavirta/create {:port port}) pohjavirta/start))
+  (let [ut (-> routes (pohjavirta/create {:port port}))]
+    (pohjavirta/start ut)
+    ut))
 
 (def servers
   (merge
