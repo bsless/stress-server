@@ -71,7 +71,7 @@
 
 (defn aleph
   [app]
-  (aleph/start-server app {:port port}))
+  (aleph/start-server (aleph/wrap-ring-async-handler app) {:port port}))
 
 (defn pohjavirta
   [routes]
