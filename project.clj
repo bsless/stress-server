@@ -9,17 +9,17 @@
                  [io.pedestal/pedestal.service "0.5.9"]
 
                  [metosin/jsonista "0.3.3"]
-                 [metosin/malli "0.5.1"]
+                 [metosin/malli "0.6.1"]
                  [metosin/muuntaja "0.6.8"]
-                 [metosin/reitit "0.5.13"]
-                 [metosin/reitit-pedestal "0.5.13"]
+                 [metosin/reitit "0.5.15"]
+                 [metosin/reitit-pedestal "0.5.15"]
                  [metosin/sieppari "0.0.0-alpha13"]
                  [aleph "0.4.7-alpha5"]
-                 [ring/ring-jetty-adapter "1.9.3"]
+                 [ring/ring-jetty-adapter "1.9.4"]
                  [http-kit "2.5.3"]
                  [com.appsflyer/donkey "0.5.1"]
                  [metosin/pohjavirta "0.0.1-alpha7"]
-                 [com.clojure-goes-fast/clj-async-profiler "0.5.0"]
+                 [com.clojure-goes-fast/clj-async-profiler "0.5.1"]
                  ]
   :main com.github.bsless.stress-server
   :target-path "target/%s"
