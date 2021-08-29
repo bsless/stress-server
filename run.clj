@@ -1,10 +1,10 @@
 (ns user
   (:require
    [clojure.string :as str]
+   [clojure.walk :as walk]
    [babashka.process :as p]
    [babashka.fs :as fs]
    [babashka.curl :as curl]
-   [cheshire.core :as json]
    [clojure.pprint :as pprint]))
 
 (prefer-method pprint/simple-dispatch clojure.lang.IPersistentMap clojure.lang.IDeref)
@@ -14,28 +14,28 @@
 (def route 'ring)
 
 (comment
-  (curl/post
+  (curl/get
    "http://localhost:9999/profile"
    {:headers {"content-type" "application/json"}
-    :body (json/generate-string {:file "bar.svg" :duration 5})}))
+    :query-params {"file" "bar.svg" "duration" (str 5)}}))
 
-(defn -post
+(defn -get
   [url m]
-  (curl/post
+  (curl/get
    url
-   {:body (json/generate-string m)
+   {:query-params (walk/stringify-keys m)
     :headers {"content-type" "application/json"}}))
 
-(defn post
+(defn get!
   ([url m]
-   (post url m false))
+   (get! url m false))
   ([url m async?]
    (if async?
-     (future (-post url m))
-     (-post url m))))
+     (future (-get url m))
+     (-get url m))))
 
 (comment
-  (def p (post "localhost:9999/profile" {:file "bar.svg" :duration 5} true)))
+  (def p (get! "localhost:9999/profile" {:file "bar.svg" :duration 5} true)))
 
 (def jar "target/uberjar/server.jar")
 (def url "http://localhost:9999/math/plus?x=1&y=2")
@@ -127,7 +127,7 @@
     (do-warmup)
     (future
       (Thread/sleep 5000)
-      (println (post "localhost:9999/profile" {:file file :duration default-profile-duration}))
+      (println (get! "localhost:9999/profile" {:file file :duration default-profile-duration}))
       (println "Profiling request sent"))
     (do-warmup)
     (p/destroy proc)))

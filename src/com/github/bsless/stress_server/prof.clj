@@ -64,7 +64,7 @@
   (run {:duration 5 :file "foo.png"}))
 
 (defn handler
-  [{{opts :body} :parameters}]
+  [{{opts :query} :parameters}]
   (let [opts (rename-keys opts)]
     (if (:async opts)
       (future
@@ -78,7 +78,7 @@
 
 (def route
   ["/profile"
-   {:post
+   {:get
     {:summary "Run clj-async-profiler"
-     :parameters {:body options}
+     :parameters {:query options}
      :handler handler}}])
