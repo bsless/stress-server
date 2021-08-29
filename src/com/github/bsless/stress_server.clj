@@ -28,7 +28,7 @@
  (require
   '[com.appsflyer.donkey.core :as donkey-kong]
   '[com.appsflyer.donkey.server :as ds]
-  '[com.appsflyer.donkey.result :refer [on-success]])
+  '[com.appsflyer.donkey.result :as dr :refer [on-success]])
 
  (defn donkey
    [routes]
@@ -39,7 +39,7 @@
       :routes [{:handler routes
                 :handler-mode :non-blocking}]})
     (ds/start)
-    (on-success (fn [_] (println "Server started listening on port" port))))))
+    (dr/on-success (fn [_] (println "Server started listening on port" port))))))
 
 (defn pedestal
   [router]
