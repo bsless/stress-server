@@ -8,7 +8,7 @@
 
    [pohjavirta.server :as pohjavirta]
 
-   [com.github.bsless.stress-server.ring :as ring]
+   [com.github.bsless.stress-server.ring-interceptors :as ring-interceptors]
    [com.github.bsless.stress-server.ring-middleware :as ring-middleware]
    [com.github.bsless.stress-server.pedestal :as p])
   (:gen-class))
@@ -92,7 +92,7 @@
 (defn -main
   [& [server router]]
   (let [router (case router
-                 "ring" (ring/app)
+                 "ring" (ring-interceptors/app)
                  "ring-middleware" (ring-middleware/app)
                  "pedestal" (p/router))
         go (get servers server)]

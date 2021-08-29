@@ -1,4 +1,4 @@
-(ns com.github.bsless.stress-server.ring
+(ns com.github.bsless.stress-server.ring-interceptors
   (:require
    [reitit.ring :as ring]
    [reitit.http :as http]
