@@ -67,7 +67,7 @@
 
 (defn jetty
   [app]
-  (jetty/run-jetty app {:port port, :join? false}))
+  (jetty/run-jetty app {:port port, :join? false :async? true}))
 
 (defn aleph
   [app]
