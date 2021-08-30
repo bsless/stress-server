@@ -15,6 +15,7 @@
                  [metosin/reitit-pedestal "0.5.15"]
                  [metosin/sieppari "0.0.0-alpha13"]
                  [aleph "0.4.7-alpha5"]
+                 [luminus/ring-undertow-adapter "1.2.3"]
                  [ring/ring-jetty-adapter "1.9.4"]
                  [http-kit "2.5.3"]
                  [com.appsflyer/donkey "0.5.1"]

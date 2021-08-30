@@ -8,6 +8,8 @@
 
    [pohjavirta.server :as pohjavirta]
 
+   [ring.adapter.undertow :as ut]
+
    [com.github.bsless.stress-server.ring-interceptors :as ring-interceptors]
    [com.github.bsless.stress-server.ring-middleware :as ring-middleware]
    [com.github.bsless.stress-server.pedestal :as p])
@@ -79,12 +81,17 @@
     (pohjavirta/start ut)
     ut))
 
+(defn undertow
+  [routes]
+  (ut/run-undertow routes {:port port :async? true}))
+
 (def servers
   (merge
    {"pedestal" pedestal
     "httpkit" httpkit
     "jetty" jetty
     "pohjavirta" pohjavirta
+    "undertow" undertow
     "aleph" aleph}
    (above-8
     {"donkey" donkey})))
