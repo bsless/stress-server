@@ -11,20 +11,29 @@
 
 
 (def server 'httpkit)
-(def route 'ring)
+(def route 'ring-interceptors)
+(def gc "-XX:+UseG1GC")
+(def java 8)
 
 (comment
   (curl/get
-   "http://localhost:9999/profile"
+   "localhost:9999/profile"
    {:headers {"content-type" "application/json"}
     :query-params {"file" "bar.svg" "duration" (str 5)}}))
 
 (defn -get
   [url m]
-  (curl/get
-   url
-   {:query-params (walk/stringify-keys m)
-    :headers {"content-type" "application/json"}}))
+  (let [m (walk/stringify-keys m)]
+    (println m)
+    (curl/get
+     url
+     {:query-params m
+      :headers {"content-type" "application/json"}})))
+
+(comment
+  (-get
+   "localhost:9999/profile"
+   {:file "./results/httpkit.ring-interceptors.java8.G1gc.svg", :duration "60", :async "true"}))
 
 (defn get!
   ([url m]
@@ -50,10 +59,14 @@
     (p/sh cmd)
     (println "wrote histogram to" png)))
 
+(defn format-gc
+  [gc]
+  (-> gc str (str/replace  #"\-XX:\+Use" "") (str/replace  #"GC" "")))
 
 (defn output-file-name
-  [name r t c d]
-  (str name ".r" r ".t" t ".c" c ".d" d ".out"))
+  [name r t c d java gc]
+  (let [gc (format-gc gc)]
+    (str name ".java" java "." gc "gc" ".r" r ".t" t ".c" c ".d" d ".out")))
 
 (defn wrk
   [r t c d url]
@@ -68,9 +81,9 @@
    url])
 
 (defn do-wrk
-  [name rate t c d url]
+  [name rate t c d url java gc]
   (let [wrk-cmd (wrk rate t c d url)
-        out (str "results/" (output-file-name name rate t c d))]
+        out (str "results/" (output-file-name name rate t c d java gc))]
     (println "running:" wrk-cmd)
     (let [proc (p/process wrk-cmd)
           report (slurp (:out (p/check proc)))]
@@ -78,15 +91,17 @@
       (println "wrk done")
       (process-histogram out))))
 
-(def warmup (str "wrk -R10k -t12 -c400 -d240s " (pr-str url)))
+(def default-profile-duration 60)
 
 (defn do-warmup
-  []
-  (println "warming up")
-  (let [proc (p/check (p/process warmup {:out :inherit}))
-        exit (:exit proc)]
-    (println "warmup finished with status" exit)
-    exit))
+  ([]
+   (do-warmup "60"))
+  ([d]
+   (println "warming up")
+   (let [proc (p/check (p/process (wrk "10k" "12" "400" (str d) url) {:out :inherit}))
+         exit (:exit proc)]
+     (println "warmup finished with status" exit)
+     exit)))
 
 (defn serve
   ([server route]
@@ -116,41 +131,66 @@
   (def proc (p/process (serve 'httpkit 'ring)))
   (println (slurp (:err proc))))
 
-(def default-profile-duration 60)
 
 (defn profile
-  [server route]
+  [server route java gc]
   (let [proc (do-serve server route ["-Djdk.attach.allowAttachSelf"
+                                     "-XX:+UnlockExperimentalVMOptions"
                                      "-XX:+UnlockDiagnosticVMOptions"
-                                     "-XX:+DebugNonSafepoints"])
-        file (format "./results/%s.%s.svg" server route)]
-    (do-warmup)
+                                     "-XX:+DebugNonSafepoints"
+                                     (str gc)])
+        file (format "./results/%s.%s.java%s.%sgc.svg" server route java (format-gc gc))]
+    (do-warmup "70")
     (future
-      (Thread/sleep 5000)
-      (println (get! "localhost:9999/profile" {:file file :duration default-profile-duration}))
+      (Thread/sleep 1000)
+      (println (get! "localhost:9999/profile"
+                     {:file file
+                      :duration (str default-profile-duration)
+                      :async (str true)}))
       (println "Profiling request sent"))
-    (do-warmup)
+    (do-warmup "120")
     (p/destroy proc)))
 
 (comment
-  (profile "httpkit" "ring"))
+  (profile "httpkit" "ring" "8" "G1"))
 
 (defn duration
   [minutes]
   (str (* minutes 60) "s"))
 
 (def spec
-  '{httpkit
-    {rate ["60k" "75k"]}
-    pohjavirta
-    {rate ["60k" "75k" "90k"]}
-    aleph
-    {rate ["10k"]}
-    jetty
-    {rate ["50k" "60k" "70k"]}})
+  '{httpkit {rate ["10k" "30k" "60k"]}
+    undertow {rate ["10k" "30k" "60k"]}
+    pohjavirta {rate ["10k" "30k" "60k"]}
+    aleph {rate ["10k" "20k" "30k"]}
+    jetty {rate ["10k" "30k" "60k"]}})
+
+(def java-specs
+  '{8 {gc [-XX:+UseG1GC -XX:+UseParallelGC]
+       jenv-version 1.8}
+    11 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC]}
+    15 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC -XX:+UseShenandoahGC]}})
+
+(defn jenv
+  [cmd]
+  (p/sh (into ["jenv"] cmd)))
+
+(defn jenv-version
+  []
+  (jenv ["version"]))
+
+(comment
+  (:out (jenv-version)))
+
+(defn jenv-local
+  [v]
+  (jenv ["local" (str v)]))
+
+(comment
+  (jenv-local 1.8))
 
 (defn -wrk
-  [server route]
+  [server route java gc]
   (doseq [rate (get-in spec [server 'rate])
           t [16]
           c [400]
@@ -158,19 +198,24 @@
           :let [name (str server "." route)
                 d (duration d)]]
     (wait 20)
-    (do-wrk name rate t c d url)))
+    (do-wrk name rate t c d url java gc)))
 
 (defn -main
   []
-  (doseq [server '[httpkit jetty aleph pohjavirta]
-          route '[ring ring-middleware]
-          :let [_ (profile server route)
-                proc (do-serve server route)]
+  (doseq [server '[httpkit jetty aleph pohjavirta undertow]
+          route '[ring-interceptors ring-middleware]
+          java [8 11 15]
+          :let [version (get-in java-specs [java 'jenv-version] java)
+                gcs (get-in java-specs [java 'gc])
+                _ (jenv-local version)]
+          gc gcs
+          :let [_ (profile server route java gc)
+                proc (do-serve server route ["-XX:+UnlockExperimentalVMOptions" "-Djdk.attach.allowAttachSelf" gc])]
           :while (nil? (:exit proc))
           :let [exit (do-warmup)]
           :while (zero? exit)]
 
-    (-wrk server route)
+    (-wrk server route java gc)
 
     (p/destroy proc))
   (println "bye"))
