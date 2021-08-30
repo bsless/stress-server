@@ -64,17 +64,19 @@
   (run {:duration 5 :file "foo.png"}))
 
 (defn handler
-  [{{opts :query} :parameters}]
-  (let [opts (rename-keys opts)]
-    (if (:async opts)
-      (future
-        (try
-          (run opts)
-          (catch Exception e
-            (println e))))
-      (run opts)))
-  {:status 200
-   :body "ok"})
+  ([{{opts :query} :parameters}]
+   (let [opts (rename-keys opts)]
+     (if (:async opts)
+       (future
+         (try
+           (run opts)
+           (catch Exception e
+             (println e))))
+       (run opts)))
+   {:status 200
+    :body "ok"})
+  ([req respond raise]
+   (respond (handler req))))
 
 (def route
   ["/profile"
