@@ -92,7 +92,7 @@
 (defn -main
   [& [server router]]
   (let [router (case router
-                 "ring" (ring-interceptors/app)
+                 "ring-interceptors" (ring-interceptors/app)
                  "ring-middleware" (ring-middleware/app)
                  "pedestal" (p/router))
         go (get servers server)]
