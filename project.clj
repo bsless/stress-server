@@ -5,6 +5,15 @@
             :url "https://www.eclipse.org/legal/epl-2.0/"}
   :dependencies [[org.clojure/clojure "1.10.3"]
 
+                 [com.fasterxml.jackson.core/jackson-core "2.12.4"]
+                 [com.fasterxml.jackson.core/jackson-databind "2.12.4"]
+
+                 [org.clojure/tools.reader "1.3.6"]
+                 [crypto-random "1.2.1"]
+                 [commons-codec "1.15"]
+                 [org.eclipse.jetty/jetty-server "9.4.42.v20210604"]
+                 [com.cognitect/transit-clj "1.0.324"]
+
                  [io.pedestal/pedestal.jetty "0.5.9"]
                  [io.pedestal/pedestal.service "0.5.9" :exclusions [ring/ring-core]]
 
@@ -20,7 +29,9 @@
 
                  [metosin/reitit-pedestal "0.5.15"]
                  [metosin/sieppari "0.0.0-alpha13"]
-                 [aleph "0.4.7-alpha5"]
+                 [aleph "0.4.7-alpha7"]
+                 [io.aleph/dirigiste "1.0.0"]
+                 [manifold "0.1.9-alpha6"]
                  [luminus/ring-undertow-adapter "1.2.3"]
                  [ring/ring-jetty-adapter "1.9.4"]
                  [ring/ring-core "1.9.4"]
