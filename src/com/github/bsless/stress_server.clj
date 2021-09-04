@@ -13,7 +13,8 @@
    [com.github.bsless.httpkit :as kit]
    [com.github.bsless.stress-server.ring-interceptors :as ring-interceptors]
    [com.github.bsless.stress-server.ring-middleware :as ring-middleware]
-   [com.github.bsless.stress-server.pedestal :as p])
+   [com.github.bsless.stress-server.pedestal :as p]
+   [com.github.bsless.stress-server.handler :as handler])
   (:gen-class))
 
 (def java-version (System/getProperty "java.version"))
@@ -106,6 +107,7 @@
   (let [router (case router
                  "ring-interceptors" (ring-interceptors/app)
                  "ring-middleware" (ring-middleware/app)
+                 "stub" handler/stub
                  "pedestal" (p/router))
         go (get servers server)]
     (go router async?)
