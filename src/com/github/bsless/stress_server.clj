@@ -10,6 +10,7 @@
 
    [ring.adapter.undertow :as ut]
 
+   [com.github.bsless.httpkit :as kit]
    [com.github.bsless.stress-server.ring-interceptors :as ring-interceptors]
    [com.github.bsless.stress-server.ring-middleware :as ring-middleware]
    [com.github.bsless.stress-server.pedestal :as p])
@@ -25,6 +26,7 @@
 
 (def port 9999)
 
+#_
 (above-8
  (println "above java 8, adding a donkey")
  (require
@@ -64,26 +66,28 @@
       (server/start)))
 
 (defn httpkit
-  [app]
-  (httpkit/run-server app {:port port}))
+  [app async?]
+  (let [app (if async? (kit/ring->httpkit app) app)]
+    (httpkit/run-server app {:port port})))
 
 (defn jetty
-  [app]
-  (jetty/run-jetty app {:port port, :join? false :async? true}))
+  [app async?]
+  (jetty/run-jetty app {:port port, :join? false :async? (boolean async?)}))
 
 (defn aleph
-  [app]
-  (aleph/start-server (aleph/wrap-ring-async-handler app) {:port port}))
+  [app async?]
+  (let [app (if async? (aleph/wrap-ring-async-handler app) app)]
+    (aleph/start-server app {:port port})))
 
 (defn pohjavirta
-  [routes]
+  [routes _async?]
   (let [ut (-> routes (pohjavirta/create {:port port}))]
     (pohjavirta/start ut)
     ut))
 
 (defn undertow
-  [routes]
-  (ut/run-undertow routes {:port port :async? true}))
+  [routes async?]
+  (ut/run-undertow routes {:port port :async? (boolean async?)}))
 
 (def servers
   (merge
@@ -93,15 +97,16 @@
     "pohjavirta" pohjavirta
     "undertow" undertow
     "aleph" aleph}
+   #_
    (above-8
     {"donkey" donkey})))
 
 (defn -main
-  [& [server router]]
+  [& [server router async?]]
   (let [router (case router
                  "ring-interceptors" (ring-interceptors/app)
                  "ring-middleware" (ring-middleware/app)
                  "pedestal" (p/router))
         go (get servers server)]
-    (go router)
+    (go router async?)
    (deref (promise))))
