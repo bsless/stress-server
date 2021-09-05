@@ -30,7 +30,7 @@
             :default-values true
             ;; malli options
             :options nil})
-          :muuntaja m/instance
+          :muuntaja (m/create (merge m/default-options {:return :bytes}))
           :interceptors
           [;; swagger feature
            swagger/swagger-feature
