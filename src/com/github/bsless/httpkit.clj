@@ -15,8 +15,7 @@
 
 (defn ring->httpkit
   [handler]
-  (fn
-    ([request]
-     (when-let [ch (request :async-channel)]
-       (handler request (respond ch) (raise ch))
-       {:body ch}))))
+  (fn httpkit->async [request]
+    (when-let [ch (request :async-channel)]
+      (handler request (respond ch) (raise ch))
+      {:body ch})))
