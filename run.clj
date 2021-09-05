@@ -66,7 +66,7 @@
 (defn output-file-name
   [name r t c d java gc]
   (let [gc (format-gc gc)]
-    (str name ".java" java "." gc "gc" ".r" r ".t" t ".c" c ".d" d ".out")))
+    (str name ".java" java "." gc "GC" ".r" r ".t" t ".c" c ".d" d ".out")))
 
 (defn wrk
   [r t c d url]
@@ -139,7 +139,7 @@
                                      "-XX:+UnlockDiagnosticVMOptions"
                                      "-XX:+DebugNonSafepoints"
                                      (str gc)])
-        file (format "./results/%s.%s.java%s.%sgc.svg" server route java (format-gc gc))]
+        file (format "./results/%s.%s.java%s.%sGC.svg" server route java (format-gc gc))]
     (do-warmup "70")
     (future
       (Thread/sleep 1000)
@@ -159,11 +159,11 @@
   (str (* minutes 60) "s"))
 
 (def spec
-  '{httpkit {rate ["10k" "30k" "60k"]}
-    undertow {rate ["10k" "30k" "60k"]}
-    pohjavirta {rate ["10k" "30k" "60k"]}
-    aleph {rate ["10k" "20k" "30k"]}
-    jetty {rate ["10k" "30k" "60k"]}})
+  '{httpkit {rate ["10k" "30k" "50k" "60k"]}
+    undertow {rate ["10k" "30k" "50k" "60k"]}
+    pohjavirta {rate ["10k" "30k" "50k" "60k"]}
+    aleph {rate ["10k" #_#_#_"30k" "50k" "60k"]}
+    jetty {rate ["10k" "30k" "50k" "60k"]}})
 
 (def java-specs
   '{8 {gc [-XX:+UseG1GC -XX:+UseParallelGC]
@@ -202,14 +202,15 @@
 
 (defn -main
   []
-  (doseq [server '[httpkit jetty aleph pohjavirta undertow]
+  (doseq [server '[#_httpkit #_jetty #_aleph pohjavirta #_undertow]
           route '[ring-interceptors ring-middleware]
           java [8 11 15]
           :let [version (get-in java-specs [java 'jenv-version] java)
                 gcs (get-in java-specs [java 'gc])
                 _ (jenv-local version)]
           gc gcs
-          :let [_ (profile server route java gc)
+          :let [
+                _ (profile server route java gc)
                 proc (do-serve server route ["-XX:+UnlockExperimentalVMOptions" "-Djdk.attach.allowAttachSelf" gc])]
           :while (nil? (:exit proc))
           :let [exit (do-warmup)]
