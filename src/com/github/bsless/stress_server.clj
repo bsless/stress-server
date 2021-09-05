@@ -104,6 +104,7 @@
 
 (defn -main
   [& [server router async?]]
+  (println "starting with options: server" server "handler" router "async" async?)
   (let [router (case router
                  "ring-interceptors" (ring-interceptors/app)
                  "ring-middleware" (ring-middleware/app)
