@@ -27,6 +27,9 @@ Build an uberjar and run `run.clj`.
 
 See results directory
 
+For more elaborate data analysis, see `./results/results.csv` which
+contains the entire result set.
+
 ### Understanding the results
 
 There are lots of files in the results directory.
