@@ -34,7 +34,7 @@ contains the entire result set.
 
 There are lots of files in the results directory.
 
-- `out` files: Raw output from awk2
+- `out` files: Raw output from wrk2
 - `png` files: hdr plots represented graphically
 - `svg` files: flame graphs profiling of servers under stress test
 
