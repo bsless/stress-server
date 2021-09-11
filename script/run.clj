@@ -9,23 +9,6 @@
 
 (prefer-method pprint/simple-dispatch clojure.lang.IPersistentMap clojure.lang.IDeref)
 
-(def spec
-  '{httpkit {rate ["10k" "30k" "50k" "60k"]
-             async? true}
-    undertow {rate ["10k" "30k" "50k" "60k"]
-              async? true}
-    pohjavirta {rate ["10k" "30k" "50k" "60k"]}
-    aleph {rate ["10k" "20k" "30k"] async? true}
-    jetty {rate ["10k" "30k" "50k" "60k"] async? true}})
-
-(def java-specs
-  '{8 {gc [-XX:+UseG1GC -XX:+UseParallelGC] jenv-version 1.8}
-    11 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC]}
-    15 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC -XX:+UseShenandoahGC]}})
-
-(def jar "target/uberjar/server.jar")
-(def url "http://localhost:9999/math/plus?x=1&y=2")
-
 (comment
   (curl/get
    "localhost:9999/profile"
@@ -135,7 +118,7 @@
 
 (defn serve-cmd
   [opts]
-  (let [{:keys [server route java-opts async?]} opts]
+  (let [{:keys [server route java-opts async? jar]} opts]
     (cond->
         (conj (into ["java"] java-opts) "-jar" jar server route)
       async? (conj "true"))))
@@ -174,16 +157,18 @@
     (let [opts (assoc opts :java-opts java-opts)
           proc (serve opts)
           file (format "./results/%s.%s.%s.java%s.%sGC.svg" server route (if async? "async" "sync") java (format-gc gc))]
-      (do-warmup (assoc opts :d "70"))
-      (future
-        (Thread/sleep 1000)
-        (println (get! "localhost:9999/profile"
-                       {:file file
-                        :duration (str default-profile-duration)
-                        :async (str true)}))
-        (println "Profiling request sent"))
-      (do-warmup (assoc opts :d "120"))
-      (p/destroy proc))))
+      (when (nil? (:exit proc))
+        (when (zero? (do-warmup (assoc opts :d "120")))
+          (future
+            (wait 10)
+            (println (get! "localhost:9999/profile"
+                           {:file file
+                            :duration (str default-profile-duration)
+                            :async (str true)}))
+            (println "Profiling request sent"))
+          (do-warmup (assoc opts :d "120"))
+          (p/destroy proc)
+          true)))))
 
 (defn duration
   [minutes]
@@ -208,6 +193,29 @@
 
 (comment
   (jenv-local 1.8))
+
+(def spec
+  '{httpkit {rate ["10k" "30k" "50k" "60k"]
+             async? true}
+    undertow {rate ["10k" "30k" "50k" "60k"]
+              async? true}
+    pohjavirta {rate ["10k" "30k" "50k" "60k"]}
+    aleph {rate ["10k" "20k" "30k"] async? true}
+    jetty {rate ["10k" "30k" "50k" "60k"] async? true}})
+
+(def java-specs
+  '{
+    8 {gc [-XX:+UseG1GC -XX:+UseParallelGC] jenv-version 1.8}
+    graal8 {gc [-XX:+UseG1GC -XX:+UseParallelGC] jenv-version graalvm64-1.8.0.302}
+    11 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC]}
+    graal11 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC] jenv-version graalvm64-11.0.12}
+    15 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC -XX:+UseShenandoahGC]}
+    16 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC -XX:+UseShenandoahGC]}
+    graal16 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC] jenv-version graalvm64-16.0.2}
+    })
+
+(def jar "target/uberjar/server.jar")
+(def url "http://localhost:9999/math/plus?x=1&y=2")
 
 (defn -wrk-flow
   [f opts]
@@ -267,7 +275,7 @@
   (println "bye"))
 
 (comment
-  (-main {:url url}))
+  (-main {:url url :jar jar}))
 
 (comment
   ;; spit results to file for easy viewing
