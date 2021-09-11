@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+csv=$(basename -s .out "$1").csv
+
+sed -n '/Value.*Percentile.*TotalCount/,/StdDeviation/{p;/StdDeviation/q}' "$1" \
+	| grep -E '\S' \
+	| sed '$d' \
+	| sed \
+		-e 's/^\s*//g' \
+		-e 's/\s*$//' \
+		-e 's/\s\+/,/g' > "$csv"
