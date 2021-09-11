@@ -27,6 +27,34 @@ Build an uberjar and run `run.clj`.
 
 See results directory
 
+### Understanding the results
+
+There are lots of files in the results directory.
+
+- `out` files: Raw output from awk2
+- `png` files: hdr plots represented graphically
+- `svg` files: flame graphs profiling of servers under stress test
+
+Naming convention:
+
+Let's look at an example file name: 
+
+`httpkit.ring-middleware.async.java8.ParallelGC.r10k.t16.c400.d600s.png`
+
+```
+httpkit - server name
+ring-middleware - handler
+async - sync or async mode
+java8 - java version
+ParallelGC - GC algorithm
+r10k - wrk rate
+t16 - wrk threads number
+c400 - wrk connections number
+d600s - wrk duration in seconds
+```
+
+SVG files don't specify wrk parameters.
+
 ## Measurements
 
 In [Zach Tellman's talk](https://www.youtube.com/watch?v=1bNOO3xxMc0) on
@@ -38,15 +66,49 @@ For this reason, I chose a minimal duration for wrk of 10 minutes. It is
 not a lot. If anything, it's too short, but any less than that has been
 found to provide incorrect results.
 
+## Pitfalls, suggestions and conclusions
+
+- async ring with http-kit. See `com.github.bsless.httpkit` ns
+- Return raw bytes from muuntaja! `(m/create (assoc m/default-options :return :bytes))`
+- Reitit options: `{:inject-match? false :inject-router? false}`
+- Why did Aleph leak memory? Why did it stop? Could be related to reitit options?
+- Ensure latest ring deps! Can be overridden by transitive dependencies.
+- Regexes are bad on a hot path. So is `merge`.
+
+### Surprising findings and quick wins
+
+All of these turned into PRs
+
+- found a bug in muuntaja where memoization did not work when content
+  type was empty (merged)
+- Keywordize keys has a huge cost (open)
+- Ring params middleware was inefficient because it used `merge-with merge` (merged)
+- Ring query params parser was slow because of it used regular
+  expressions (merged)
+- Ring content-type parsing was very slow (released long time ago,
+  accidentally pulled in old dep)
+
+
+## Winners
+
+TBD
+          
 ## TODO
 
-- [ ] Run with different Java versions (support Donkey)
-- [ ] Different GCs
+- [X] Run with different Java versions
+- [ ] GraalVM
+- [ ] Java 16
+- [ ] Loom
+- [ ] Donkey
+- [ ] Pedestal
+- [X] Different GCs
 - [ ] Lightweight routes
 - [ ] Large responses
 - [ ] Compojure
 - [ ] Pohjavirta POST?
-- [ ] Rerun Aleph async
+- [X] Rerun Aleph async
+- [ ] Faster turnaround time
+- [ ] Tuning?
 
 ## License
 
