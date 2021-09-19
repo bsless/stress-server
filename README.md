@@ -21,7 +21,10 @@ Currently very work in progress, contributions and suggestions extremely welcome
 
 ## Usage
 
-Build an uberjar and run `run.clj`.
+- Build an uberjar
+- Start a babashka nrepl server
+- Connect to the server and load `./script/run.clj`
+- Run `(-main {:url url :jar jar})`
 
 ## Results
 
