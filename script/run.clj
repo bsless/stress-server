@@ -211,6 +211,7 @@
     graal11 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC] jenv-version graalvm64-11.0.12}
     15 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC -XX:+UseShenandoahGC]}
     16 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC -XX:+UseShenandoahGC]}
+    17 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC -XX:+UseShenandoahGC]}
     graal16 {gc [-XX:+UseG1GC -XX:+UseParallelGC -XX:+UseZGC] jenv-version graalvm64-16.0.2}
     })
 
@@ -236,7 +237,7 @@
   [f opts]
   (doseq [server '[httpkit jetty aleph pohjavirta undertow]
           route '[ring-middleware ring-interceptors]
-          java [8 11 15]
+          java [8 11 15 17]
           :let [gcs (get-in java-specs [java 'gc])
                 async? (if (get-in spec [server 'async?]) [true false] [false])]
           async async?
