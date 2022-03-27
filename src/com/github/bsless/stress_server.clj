@@ -78,7 +78,7 @@
 (defn aleph
   [app async?]
   (let [app (if async? (aleph/wrap-ring-async-handler app) app)]
-    (aleph/start-server app {:port port})))
+    (aleph/start-server app {:port port :epoll? true})))
 
 (defn pohjavirta
   [routes _async?]
